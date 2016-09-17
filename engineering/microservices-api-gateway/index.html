@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="generator" content="Hugo 0.16" />
+
+  <title> &middot; My New Hugo Site</title>
+
+  
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/0.6.0/pure-min.css">
+
+  <!--[if lte IE 8]>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/0.6.0/grids-responsive-old-ie-min.css">
+  <![endif]-->
+  <!--[if gt IE 8]><!-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pure/0.6.0/grids-responsive-min.css">
+  <!--<![endif]-->
+
+  <!--[if lte IE 8]>
+  <link rel="stylesheet" href="/css/side-menu-old-ie.css">
+  <![endif]-->
+  <!--[if gt IE 8]><!-->
+  <link rel="stylesheet" href="/css/side-menu.css">
+  <!--<![endif]-->
+
+  <link rel="stylesheet" href="/css/blackburn.css">
+
+  
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+  
+  <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet" type="text/css">
+
+  
+  
+
+  
+
+  <link rel="shortcut icon" href="http://replace-this-with-your-hugo-site.com/img/favicon.ico" type="image/x-icon" />
+
+  
+  
+
+</head>
+
+
+<body>
+<div id="layout">
+
+  
+<a href="#menu" id="menuLink" class="menu-link">
+  
+  <span></span>
+</a>
+<div id="menu">
+
+  
+
+  <div class="pure-menu">
+    <ul class="pure-menu-list">
+      
+    </ul>
+  </div>
+
+  <div class="pure-menu social">
+  <ul class="pure-menu-list">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+  </ul>
+</div>
+
+
+  <div>
+  <div class="small-print">
+    <small></small>
+  </div>
+  <div class="small-print">
+    <small>Built with&nbsp;<a href="https://gohugo.io/" target="_blank">Hugo</a></small>
+    <small>Theme&nbsp;<a href="https://github.com/yoshiharuyamashita/blackburn" target="_blank">Blackburn</a></small>
+  </div>
+</div>
+
+</div>
+
+
+  <div id="main">
+
+
+<div class="header">
+  <h1></h1>
+  <h2></h2>
+</div>
+<div class="content">
+  
+
+<p>date = &ldquo;2016-09-10T16:05:41+01:00&rdquo;
+draft = false</p>
+
+<h2 id="title-microservices-and-the-api-gateway-reducing-complexity">title = &ldquo;Microservices and the api gateway - reducing complexity&rdquo;</h2>
+
+<p>A common problem/stumbling block when getting started with microservices and general service based architectures, is understanding how you should get those services to work together. When dealing with a distributed system, simplicity is vital. Without simplicity, development time for new features will slowly but surely bloat as will the length of time required for new developers to become productive within the system. Simplicity helps us reason about the overall system and apply common patterns and logic when trying to understand those parts we have not yet seen or are currently being developed. In this post I am going to cover a common pitfall that application designers/developers can fall into that can lead to overly complex and tightly coupled systems I am also going to outline a pattern, the api gateway, that I believe can solve and simplify applications built from microservices.</p>
+
+<p>Lets get started with a simple example of an application built with microservices. We want a photo site that allows users to upload images and view them later. For this example we will start by having two services that make up our application:</p>
+
+<ul>
+<li>authentication service</li>
+<li>file service
+<br />
+<br /></li>
+</ul>
+
+<h5 id="authentication-service-v1">Authentication service v1:</h5>
+
+<pre><code class="language-javascript">  //
+    router.post(&quot;/validate/userid&quot;, function (req,res){
+      if(req.params.userid === &quot;joe@smith.com&quot;){
+        return res.json({&quot;valid&quot;:true});
+      }
+      return res.status(401).json({&quot;valid&quot;:false});
+    });
+</code></pre>
+
+<h5 id="file-service-v1">File service v1:</h5>
+
+<pre><code class="language-javascript">  
+  routes.get(&quot;/file/:user/:file&quot;, function (req,res){
+      var filePath = config.getPublicDir() + req.params.file;
+      fs.createReadStream(filePath).pipe(res);
+  });
+    
+</code></pre>
+
+<p>Very straightforward so far. The problem begins once we try to decide how compose these two services together in order to form our application? We could simply call the authentication service via http from the the file service, right? This is ok, but not great, if we don&rsquo;t believe our application&rsquo;s needs will expand beyond authentication and file serving. This is rarely the case for even the most simple real world applications. Already we can see the complexity and knowledge needed to work within the file service application has increased.</p>
+
+<h5 id="file-service-v2">File service v2</h5>
+
+<pre><code class="language-javascript">  
+  routes.get(&quot;/file/:user/:file&quot;, function (req,res){
+  //Tightly bound to authentication service
+    authenticationClient.validate(req.params.user, function (err,ok){
+      if(err) return res.status(err.status).end();
+      fs.createReadStream(req.params.file).pipe(res);
+    });
+  });
+    
+</code></pre>
+
+<p>So where is the problem? Firstly our file service is now tightly bound to our authentication service. In order to fulfill its api, the file service now always needs a running authentication service. Secondly, what if we want to add a new service into the mix, for example an authorisation service that checks whether the user requesting the file is actually allowed access to the file? Well lets progress our example:</p>
+
+<h5 id="authorisation-service-v1">Authorisation service v1</h5>
+
+<pre><code class="language-javascript">  
+  routes.get(&quot;/entid/:user/:access&quot;, function (req,res){
+    if(req.params.entid === 10 &amp;&amp; user === &quot;joe@smith.com&quot; &amp;&amp; &quot;read&quot; === req.params.access){
+      return res.json({&quot;valid&quot;:true});
+    }
+    res.status(401).json({&quot;valid&quot;:false});
+  });
+    
+</code></pre>
+
+<p>Our application&rsquo;s services now look like:</p>
+
+<ul>
+<li>authentication service</li>
+<li>authorisation service</li>
+<li>file service</li>
+</ul>
+
+<p>How would we make use of this new service? Well we have already established a pattern of directly calling the service so we could continue this already working pattern and add another coupling to our file service so that it looks like:</p>
+
+<h5 id="file-service-v3">File service v3:</h5>
+
+<pre><code class="language-javascript">  
+  routes.get(&quot;/file/:user/:file&quot;, function (req,res){
+  //Tightly bound to authentication service
+    authenticationClient.validate(req.params.user, function (err,ok){
+      if(err) return res.status(err.status).end();
+      //Tightly bound to authorisation service
+      authorisationClient.isAuthorised(req.params.user,req.params.file, function (err, ok){
+      if(err) return res.status(err.status).end();
+        fs.createReadStream(req.params.file).pipe(res);
+      });
+    });
+  });
+    
+</code></pre>
+
+<p>Our simple file service is starting to get pretty complicated now. It&rsquo;s more difficult to reason about as it is mixed up with authentication and authorisation, any developer having to work in this code is required to understand several layers before being able to productively and comfortably make changes. It also makes testing our function unnecessarily complicated; we now need to mock out 2 services and maintain these mocks as the services change over the course of time in order to run through the function and hit the unit of work: simply reading a file. So what is the solution to this compexity and tight coupling?</p>
+
+<h3 id="api-gateway-to-the-rescue-one-route-to-rule-them-all">Api Gateway to the rescue. One route to rule them all</h3>
+
+<p>Adding a new service that will act as a composer and controller of our services can drastically reduce complexity. In microservices this is known as an api gateway. Often these gateways can be leveraged to do more than just compose, but lets stick with the simplicity theme.</p>
+
+<h3 id="api-gateway-v1">api gateway v1</h3>
+
+<pre><code class="language-javascript">  
+  routes.get(&quot;/file/:user/:file&quot;, function (req,res){
+     async.series([
+        authenticationClient.validate(req.params.user,callback),
+        authorisationClient.isAllowedRead(req.params.user,req.params.file,callback),
+        fileClient.getFile(req.params.file,res, callback) // pipes the file to the response
+     ], function done (err, ok){
+        if(err) res.status(err.status).json(err);
+     });
+  });
+    
+</code></pre>
+
+<p>Our application is now made up of a four services.</p>
+
+<ul>
+<li>gateway</li>
+<li>authentication service</li>
+<li>authorisation service</li>
+<li>file service</li>
+</ul>
+
+<p>Our gateway is responsible for exposing the api and bringing together the required services needed to complete this api. Note that there is no business logic here, there is only composition. This means we can now remove the tangle of code from our file service and return it to being only concerned with its own responsibilities, serving files.</p>
+
+</div>
+
+</div>
+</div>
+<script src="http://replace-this-with-your-hugo-site.com/js/ui.js"></script>
+
+
+
+
+</body>
+</html>
+

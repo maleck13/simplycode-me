@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Engineerings on My New Hugo Site</title>
+    <link>http://replace-this-with-your-hugo-site.com/engineering/</link>
+    <description>Recent content in Engineerings on My New Hugo Site</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <atom:link href="http://replace-this-with-your-hugo-site.com/engineering/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title></title>
+      <link>http://replace-this-with-your-hugo-site.com/engineering/developer-confidence/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://replace-this-with-your-hugo-site.com/engineering/developer-confidence/</guid>
+      <description>
+
+&lt;p&gt;date = &amp;ldquo;2016-09-10T16:05:41+01:00&amp;rdquo;
+draft = false&lt;/p&gt;
+
+&lt;h2 id=&#34;title-confidence-and-the-software-engineer&#34;&gt;title = &amp;ldquo;Confidence and the software engineer&amp;rdquo;&lt;/h2&gt;
+
+&lt;p&gt;Computers are state machines. Software engineers or humans are also state machines. For me confidence is the most important of those states for a software engineer. Just as a piece of software can end up in a bad &amp;ldquo;state&amp;rdquo; software developers can also be in a bad state when they lack confidence.&lt;/p&gt;
+
+&lt;h3 id=&#34;what-is-confidence-in-the-context-of-software&#34;&gt;What is confidence in the context of software?&lt;/h3&gt;
+
+&lt;p&gt;So what do I actually mean when I say lack confidence. Well lets define what confidence is in the context of software engineering and then we will understand better what the lack of it is. Confidence in software is made up of the following properties:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;understanding&lt;/li&gt;
+&lt;li&gt;proof&lt;/li&gt;
+&lt;li&gt;consensus&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;So lets take a simple example. You have been asked to implement a feature that will allow administrators to find users of a business system within a certain distance so that they can be invited to local networking events.
+How does understanding fit in here?
+We must clearly understand requirements in order to have confidence that we can deliver what has been asked of us.
+Taking the above feature, what happens when we get to implementing the distance? Well is it in miles, Kilometers or some other measurement? This is a contrived example, but shows how confusion and uncertainty can begin to creep in and if it creeps into your mind you can be sure it will creep into your code. This can manifest itself as code bloat and numerous similar apis.
+We must also clearly understand the system we are going to implement this feature within or how can we have any confidence that we can deliver on time?
+How does proof fit in?
+There is only one way to reliably prove anything in software: Tests,test,tests repeatable and thorough tests. Anything else should be considered transient. Why well how will you know if it is still working? and how can you have any confidence in anything that is transient?&lt;br /&gt;
+Tests will help prove that the feature is complete and, just as importantly, they will prove that no one has broken your feature in the future. This builds not only your confidence, but also the confidence of other developer&amp;rsquo;s as they work around and within existing code.
+As a side note, for a great piece on what and how to test google has a great &lt;a href=&#34;http://googletesting.blogspot.ie/2015/04/just-say-no-to-more-end-to-end-tests.html&#34;&gt;testing blog post&lt;/a&gt;
+Finally we have consensus. It should be rare that you are working entirely alone on something bigger than a side project. Having peers involved means you can build consensus on solutions to problems and consensus always builds the confidence of those involved. If you make all the decisions yourself there is always the opportunity for doubt to creep in again. Also you can easily become consequence blind and sucked down implementation rabbit holes.&lt;/p&gt;
+
+&lt;h3 id=&#34;how-can-you-build-confidence&#34;&gt;How can you build confidence?&lt;/h3&gt;
+</description>
+    </item>
+    
+    <item>
+      <title></title>
+      <link>http://replace-this-with-your-hugo-site.com/engineering/microservices-api-gateway/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>http://replace-this-with-your-hugo-site.com/engineering/microservices-api-gateway/</guid>
+      <description>
+
+&lt;p&gt;date = &amp;ldquo;2016-09-10T16:05:41+01:00&amp;rdquo;
+draft = false&lt;/p&gt;
+
+&lt;h2 id=&#34;title-microservices-and-the-api-gateway-reducing-complexity&#34;&gt;title = &amp;ldquo;Microservices and the api gateway - reducing complexity&amp;rdquo;&lt;/h2&gt;
+
+&lt;p&gt;A common problem/stumbling block when getting started with microservices and general service based architectures, is understanding how you should get those services to work together. When dealing with a distributed system, simplicity is vital. Without simplicity, development time for new features will slowly but surely bloat as will the length of time required for new developers to become productive within the system. Simplicity helps us reason about the overall system and apply common patterns and logic when trying to understand those parts we have not yet seen or are currently being developed. In this post I am going to cover a common pitfall that application designers/developers can fall into that can lead to overly complex and tightly coupled systems I am also going to outline a pattern, the api gateway, that I believe can solve and simplify applications built from microservices.&lt;/p&gt;
+
+&lt;p&gt;Lets get started with a simple example of an application built with microservices. We want a photo site that allows users to upload images and view them later. For this example we will start by having two services that make up our application:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;authentication service&lt;/li&gt;
+&lt;li&gt;file service
+&lt;br /&gt;
+&lt;br /&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h5 id=&#34;authentication-service-v1&#34;&gt;Authentication service v1:&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  //
+    router.post(&amp;quot;/validate/userid&amp;quot;, function (req,res){
+      if(req.params.userid === &amp;quot;joe@smith.com&amp;quot;){
+        return res.json({&amp;quot;valid&amp;quot;:true});
+      }
+      return res.status(401).json({&amp;quot;valid&amp;quot;:false});
+    });
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h5 id=&#34;file-service-v1&#34;&gt;File service v1:&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  
+  routes.get(&amp;quot;/file/:user/:file&amp;quot;, function (req,res){
+      var filePath = config.getPublicDir() + req.params.file;
+      fs.createReadStream(filePath).pipe(res);
+  });
+    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Very straightforward so far. The problem begins once we try to decide how compose these two services together in order to form our application? We could simply call the authentication service via http from the the file service, right? This is ok, but not great, if we don&amp;rsquo;t believe our application&amp;rsquo;s needs will expand beyond authentication and file serving. This is rarely the case for even the most simple real world applications. Already we can see the complexity and knowledge needed to work within the file service application has increased.&lt;/p&gt;
+
+&lt;h5 id=&#34;file-service-v2&#34;&gt;File service v2&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  
+  routes.get(&amp;quot;/file/:user/:file&amp;quot;, function (req,res){
+  //Tightly bound to authentication service
+    authenticationClient.validate(req.params.user, function (err,ok){
+      if(err) return res.status(err.status).end();
+      fs.createReadStream(req.params.file).pipe(res);
+    });
+  });
+    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So where is the problem? Firstly our file service is now tightly bound to our authentication service. In order to fulfill its api, the file service now always needs a running authentication service. Secondly, what if we want to add a new service into the mix, for example an authorisation service that checks whether the user requesting the file is actually allowed access to the file? Well lets progress our example:&lt;/p&gt;
+
+&lt;h5 id=&#34;authorisation-service-v1&#34;&gt;Authorisation service v1&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  
+  routes.get(&amp;quot;/entid/:user/:access&amp;quot;, function (req,res){
+    if(req.params.entid === 10 &amp;amp;&amp;amp; user === &amp;quot;joe@smith.com&amp;quot; &amp;amp;&amp;amp; &amp;quot;read&amp;quot; === req.params.access){
+      return res.json({&amp;quot;valid&amp;quot;:true});
+    }
+    res.status(401).json({&amp;quot;valid&amp;quot;:false});
+  });
+    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Our application&amp;rsquo;s services now look like:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;authentication service&lt;/li&gt;
+&lt;li&gt;authorisation service&lt;/li&gt;
+&lt;li&gt;file service&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;How would we make use of this new service? Well we have already established a pattern of directly calling the service so we could continue this already working pattern and add another coupling to our file service so that it looks like:&lt;/p&gt;
+
+&lt;h5 id=&#34;file-service-v3&#34;&gt;File service v3:&lt;/h5&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  
+  routes.get(&amp;quot;/file/:user/:file&amp;quot;, function (req,res){
+  //Tightly bound to authentication service
+    authenticationClient.validate(req.params.user, function (err,ok){
+      if(err) return res.status(err.status).end();
+      //Tightly bound to authorisation service
+      authorisationClient.isAuthorised(req.params.user,req.params.file, function (err, ok){
+      if(err) return res.status(err.status).end();
+        fs.createReadStream(req.params.file).pipe(res);
+      });
+    });
+  });
+    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Our simple file service is starting to get pretty complicated now. It&amp;rsquo;s more difficult to reason about as it is mixed up with authentication and authorisation, any developer having to work in this code is required to understand several layers before being able to productively and comfortably make changes. It also makes testing our function unnecessarily complicated; we now need to mock out 2 services and maintain these mocks as the services change over the course of time in order to run through the function and hit the unit of work: simply reading a file. So what is the solution to this compexity and tight coupling?&lt;/p&gt;
+
+&lt;h3 id=&#34;api-gateway-to-the-rescue-one-route-to-rule-them-all&#34;&gt;Api Gateway to the rescue. One route to rule them all&lt;/h3&gt;
+
+&lt;p&gt;Adding a new service that will act as a composer and controller of our services can drastically reduce complexity. In microservices this is known as an api gateway. Often these gateways can be leveraged to do more than just compose, but lets stick with the simplicity theme.&lt;/p&gt;
+
+&lt;h3 id=&#34;api-gateway-v1&#34;&gt;api gateway v1&lt;/h3&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-javascript&#34;&gt;  
+  routes.get(&amp;quot;/file/:user/:file&amp;quot;, function (req,res){
+     async.series([
+        authenticationClient.validate(req.params.user,callback),
+        authorisationClient.isAllowedRead(req.params.user,req.params.file,callback),
+        fileClient.getFile(req.params.file,res, callback) // pipes the file to the response
+     ], function done (err, ok){
+        if(err) res.status(err.status).json(err);
+     });
+  });
+    
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Our application is now made up of a four services.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;gateway&lt;/li&gt;
+&lt;li&gt;authentication service&lt;/li&gt;
+&lt;li&gt;authorisation service&lt;/li&gt;
+&lt;li&gt;file service&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Our gateway is responsible for exposing the api and bringing together the required services needed to complete this api. Note that there is no business logic here, there is only composition. This means we can now remove the tangle of code from our file service and return it to being only concerned with its own responsibilities, serving files.&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
