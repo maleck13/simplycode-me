@@ -2,19 +2,104 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Simply code - simple code, simple examples, simple explanations</title>
-    <link>http://replace-this-with-your-hugo-site.com/</link>
+    <link>https://maleck13.github.io/simplycode.me/</link>
     <description>Recent content on Simply code - simple code, simple examples, simple explanations</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 10 Sep 2016 16:05:41 +0100</lastBuildDate>
-    <atom:link href="http://replace-this-with-your-hugo-site.com/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 17 Sep 2016 17:54:21 +0100</lastBuildDate>
+    <atom:link href="https://maleck13.github.io/simplycode.me/index.xml" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Accept interfaces return structs</title>
+      <link>https://maleck13.github.io/simplycode.me/post/golang/accept-interfaces-return-structs/</link>
+      <pubDate>Sat, 17 Sep 2016 17:54:21 +0100</pubDate>
+      
+      <guid>https://maleck13.github.io/simplycode.me/post/golang/accept-interfaces-return-structs/</guid>
+      <description>&lt;p&gt;This post is inspired by a great talk from Dave Cheney on SOLID design in Golang. You can see this talk here &lt;a href=&#34;https://www.youtube.com/watch?v=zzAdEt3xZ1M&#34;&gt;SOLID Design Dave Cheney&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;When learning Golang it can be easy to over use some of its features. When you discover interfaces, they are so powerful that, if you&amp;rsquo;re anything like me, you start using them everywhere.
+You write a library and accept an interface then you return interfaces as it seems this will help the consumers of your library in writing tests. But this can backfire a little in a way that only
+becomes obvious when you are the consumer of such a library.&lt;/p&gt;
+
+&lt;p&gt;If you return an interface from a constructor then you force the user of your library to have to implement each method of that interface in order to create a mock to test with.&lt;/p&gt;
+
+&lt;p&gt;Lets learn and explore this further with an example. Lets assume you are writing an service that needed to connect to a message broker such as activemq.
+You find there is a library that helps with this. It looks like this in sudo code:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;
+//responsible for defining how a subscription should be handled
+type stompSubscriber interface {
+	//accepts a destination /test/test for example a handler function for handling messages from that subscription and any headers you want to override / set
+	Subscribe(destination string, handler SubscriptionHandler, headers StompHeaders, receipt *Receipt) (string, error)
+	Unsubscribe(subId string, headers StompHeaders, receipt *Receipt) error
+	Ack(msg Frame) error
+	Nack(msg Frame) error
+}
+
+//responsible for defining how a publish should happen
+type stompPublisher interface {
+	//accepts a body, destination,  headers are optional as is the receipt
+	Publish(destination string, body []byte, headers StompHeaders, receipt *Receipt) error
+}
+
+//A stomp client is a combination of all of these things
+type StompClient interface {
+	stompSubscriber
+	stompPublisher
+}
+
+func New()StompClient{
+    //StompClientImpl implements all the methods of the StompClient interface.
+    return &amp;amp;StompClientImpl{}
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;So here we are returning a interface with 5 methods. Note I have ommitted the StompClientImpl code for brevity. Now lets look at what
+it is like to use this code as a client:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt;    func processMessage(sc StompClient, message string)error{
+        //some complex business logic
+        if err := sc.Publish(&amp;quot;/location&amp;quot;,[]byte(message),nil,nil);err != nil{
+            return nil
+        }
+    }
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Ok so far so good, but now when we attempt to write a test for this method, even though we are only using one method of the client, we
+have to mock all 5 of the methods on the StompClient interface. This is not the end of world but is quite annoying.&lt;/p&gt;
+
+&lt;p&gt;So how do we avoid this? If you return a struct as the client you make this much simpler for users of your library. Because now in order to test it
+all they need to do is declare an interface of their own and pass the struct returned from the library as the implementation of this interface:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&#34;language-go&#34;&gt; type MessageClient interface{
+     Publish(destination string, body []byte, headers client.StompHeaders, receipt *client.Receipt) error
+ }
+
+ func processMessage(sc MessageClient, message string)error{
+        //some complex business logic
+        if err := sc.Publish(&amp;quot;/location&amp;quot;,[]byte(message),nil,nil);err != nil{
+            return nil
+        }
+    }
+
+func main (){
+    c := client.New()
+    if err := processMessage(c,&amp;quot;a message&amp;quot;); err != nil{
+        return err
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;And now in our tests we have only one method to mock out when testing rather than 5.&lt;/p&gt;
+</description>
+    </item>
     
     <item>
       <title>Confidence and the software engineer</title>
-      <link>http://replace-this-with-your-hugo-site.com/post/software-engineering/developer-confidence/</link>
+      <link>https://maleck13.github.io/simplycode.me/post/software-engineering/developer-confidence/</link>
       <pubDate>Sat, 10 Sep 2016 16:05:41 +0100</pubDate>
       
-      <guid>http://replace-this-with-your-hugo-site.com/post/software-engineering/developer-confidence/</guid>
+      <guid>https://maleck13.github.io/simplycode.me/post/software-engineering/developer-confidence/</guid>
       <description>
 
 &lt;p&gt;Computers are state machines. Software engineers or, as we are sometimes known, humans are also state machines. For me confidence is the most important of those states for a software engineer. Just as a program can end up in a bad “state” software engineers can also suffer from being in a bad state if they lack confidence. I am not referring only to confidence in ability, but also confidence in decisions made and the finished work produced. I have regularly suffered from a lack of confidence and &lt;a href=&#34;https://en.wikipedia.org/wiki/Impostor_syndrome&#34;&gt;imposter syndrome&lt;/a&gt; throughout my life and my career. This has led me to spending a lot of time thinking about how to stop feeling this way.&lt;/p&gt;
@@ -54,10 +139,10 @@ As a side note, for a great piece on what and how to test google has a great &lt
     
     <item>
       <title>Microservices and the api gateway - reducing complexity</title>
-      <link>http://replace-this-with-your-hugo-site.com/post/software-engineering/microservices-api-gateway/</link>
+      <link>https://maleck13.github.io/simplycode.me/post/software-engineering/microservices-api-gateway/</link>
       <pubDate>Sat, 10 Sep 2016 16:05:41 +0100</pubDate>
       
-      <guid>http://replace-this-with-your-hugo-site.com/post/software-engineering/microservices-api-gateway/</guid>
+      <guid>https://maleck13.github.io/simplycode.me/post/software-engineering/microservices-api-gateway/</guid>
       <description>
 
 &lt;p&gt;A common problem/stumbling block when getting started with microservices and general service based architectures, is understanding how you should get those services to work together. When dealing with a distributed system, simplicity is vital. Without simplicity, development time for new features will slowly but surely bloat as will the length of time required for new developers to become productive within the system. Simplicity helps us reason about the overall system and apply common patterns and logic when trying to understand those parts we have not yet seen or are currently being developed. In this post I am going to cover a common pitfall that application designers/developers can fall into that can lead to overly complex and tightly coupled systems I am also going to outline a pattern, the api gateway, that I believe can solve and simplify applications built from microservices.&lt;/p&gt;
